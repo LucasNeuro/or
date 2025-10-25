@@ -171,25 +171,32 @@ def enviar_whatsapp(numero: str, mensagem: str) -> bool:
     try:
         import requests
         
-        url = f"{UAZAPI_SERVER}/api/send-message"
+        # URL correta da UAZAPI
+        url = f"{UAZAPI_SERVER}/api/{UAZAPI_INSTANCE}/send-message"
         headers = {
             "Authorization": f"Bearer {UAZAPI_TOKEN}",
             "Content-Type": "application/json"
         }
         
         data = {
-            "instance": UAZAPI_INSTANCE,
             "number": numero,
             "message": mensagem
         }
         
+        logger.info(f"Enviando mensagem para {numero}: {mensagem[:50]}...")
+        logger.info(f"URL: {url}")
+        logger.info(f"Data: {data}")
+        
         response = requests.post(url, json=data, headers=headers)
+        
+        logger.info(f"Response status: {response.status_code}")
+        logger.info(f"Response text: {response.text}")
         
         if response.status_code == 200:
             logger.info(f"Mensagem enviada para {numero}")
             return True
         else:
-            logger.error(f"Erro ao enviar mensagem: {response.status_code}")
+            logger.error(f"Erro ao enviar mensagem: {response.status_code} - {response.text}")
             return False
             
     except Exception as e:
