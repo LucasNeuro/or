@@ -396,6 +396,72 @@ async def verify_webhook():
     """Verificação do webhook"""
     return {"status": "verified", "timestamp": datetime.datetime.now().isoformat()}
 
+# Endpoints específicos da UAZAPI
+@app.post("/webhook/whatsapp/presence")
+async def whatsapp_presence(request: Request):
+    """Webhook para status de presença"""
+    try:
+        data = await request.json()
+        logger.info(f"Presence webhook: {data}")
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"Erro no presence webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/webhook/whatsapp/messages/text")
+async def whatsapp_messages_text(request: Request):
+    """Webhook para mensagens de texto"""
+    try:
+        data = await request.json()
+        logger.info(f"Text message webhook: {data}")
+        
+        # Processar mensagem de texto
+        message_data = data.get("data", {})
+        from_number = message_data.get("from", "")
+        message = message_data.get("message", "")
+        
+        if not from_number or not message:
+            from_number = data.get("from", "")
+            message = data.get("message", "")
+        
+        if message and from_number:
+            # Processar com ZOR
+            resposta, estatisticas, erro = chamar_zor(message, from_number)
+            
+            # Enviar resposta
+            sucesso = enviar_whatsapp(from_number, resposta)
+            
+            if sucesso:
+                logger.info(f"Resposta enviada para {from_number}")
+                return {"status": "success", "message": "Resposta enviada"}
+        
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"Erro no text webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/webhook/whatsapp/chats")
+async def whatsapp_chats(request: Request):
+    """Webhook para chats"""
+    try:
+        data = await request.json()
+        logger.info(f"Chats webhook: {data}")
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"Erro no chats webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/webhook/whatsapp/history")
+async def whatsapp_history(request: Request):
+    """Webhook para histórico"""
+    try:
+        data = await request.json()
+        logger.info(f"History webhook: {data}")
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"Erro no history webhook: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.get("/admin/stats")
 async def admin_stats():
     """Estatísticas administrativas"""
