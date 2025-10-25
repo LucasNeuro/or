@@ -415,25 +415,47 @@ async def whatsapp_messages_text(request: Request):
         data = await request.json()
         logger.info(f"Text message webhook: {data}")
         
-        # Processar mensagem de texto
-        message_data = data.get("data", {})
-        from_number = message_data.get("from", "")
-        message = message_data.get("message", "")
+        # Extrair dados da mensagem (formato UAZAPI)
+        message_data = data.get("message", {})
+        chat_data = data.get("chat", {})
         
-        if not from_number or not message:
-            from_number = data.get("from", "")
-            message = data.get("message", "")
+        # Pegar o número do remetente
+        sender = message_data.get("sender", "")
+        sender_name = message_data.get("senderName", "")
         
-        if message and from_number:
+        # Pegar a mensagem (priorizar wa_lastMessageTextVote, depois text, depois content)
+        text = chat_data.get("wa_lastMessageTextVote", "") or message_data.get("text", "") or message_data.get("content", "")
+        
+        chat_id = message_data.get("chatid", "")
+        
+        # Extrair número do sender (remover @s.whatsapp.net)
+        from_number = sender.replace("@s.whatsapp.net", "") if sender else ""
+        
+        # Log detalhado para debug
+        logger.info(f"Sender: {sender}")
+        logger.info(f"Sender Name: {sender_name}")
+        logger.info(f"From Number: {from_number}")
+        logger.info(f"Text (wa_lastMessageTextVote): {chat_data.get('wa_lastMessageTextVote', '')}")
+        logger.info(f"Text (message.text): {message_data.get('text', '')}")
+        logger.info(f"Text (message.content): {message_data.get('content', '')}")
+        logger.info(f"Final Text: {text}")
+        logger.info(f"Chat ID: {chat_id}")
+        
+        logger.info(f"Processando mensagem de {sender_name} ({from_number}): {text}")
+        
+        if text and from_number:
             # Processar com ZOR
-            resposta, estatisticas, erro = chamar_zor(message, from_number)
+            resposta, estatisticas, erro = chamar_zor(text, from_number)
             
-            # Enviar resposta
+            # Enviar resposta para o número correto
             sucesso = enviar_whatsapp(from_number, resposta)
             
             if sucesso:
-                logger.info(f"Resposta enviada para {from_number}")
+                logger.info(f"Resposta enviada para {sender_name} ({from_number}): {resposta[:100]}...")
                 return {"status": "success", "message": "Resposta enviada"}
+            else:
+                logger.error(f"Falha ao enviar resposta para {from_number}")
+                return {"status": "error", "message": "Falha no envio"}
         
         return {"status": "received"}
     except Exception as e:
