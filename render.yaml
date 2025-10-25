@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: zor-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements_zor.txt
+    startCommand: uvicorn zor_api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: MISTRAL_AGENT_ID
+        sync: false
+      - key: UAZAPI_TOKEN
+        sync: false
+      - key: UAZAPI_SERVER
+        sync: false
+      - key: UAZAPI_INSTANCE
+        sync: false
